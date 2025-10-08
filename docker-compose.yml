@@ -1,0 +1,51 @@
+# Hybrid setup: Docker for DB/Redis; host runs bench and code
+services:
+  mariadb:
+    image: mariadb:11.8
+    container_name: erp_mariadb
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_ROOT_HOST=%
+      # Create a dummy DB so container boots cleanly; bench will create real DBs
+      - MYSQL_DATABASE=boot
+    ports:
+      - "${DB_PORT:-3307}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis-cache:
+    image: redis:6.2-alpine
+    container_name: erp_redis_cache
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--stop-writes-on-bgsave-error", "no"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_cache_data:/data
+
+  redis-queue:
+    image: redis:6.2-alpine
+    container_name: erp_redis_queue
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--stop-writes-on-bgsave-error", "no"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_queue_data:/data
+
+  redis-socketio:
+    image: redis:6.2-alpine
+    container_name: erp_redis_socketio
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--stop-writes-on-bgsave-error", "no"]
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_socketio_data:/data
+
+volumes:
+  db_data:
+  redis_cache_data:
+  redis_queue_data:
+  redis_socketio_data:
